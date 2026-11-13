@@ -50,7 +50,12 @@ a short caption so a viewer who missed the day can tell what happened.
 
 `main.ts` (Node 22, standard library only) copies `entry.png` to
 `$MAKEFUN_OUTPUT_DIR/entry.png` (default `/output`). Deterministic, no
-network, no API key. Run locally with:
+network, no API key. After copying it validates the output: same byte size
+as the source and JPEG SOI magic (`0xFF 0xD8`) at the start, failing loudly
+otherwise. Local grading is not available for this competition — the kit
+does not publish its scorer/reference data, so `grade-local` declines to
+score it; determinism was verified by running the program twice and
+comparing sha256 hashes (identical). Run locally with:
 
 ```sh
 mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts

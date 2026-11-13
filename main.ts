@@ -3,7 +3,10 @@
 // sitting next to this program (a JPEG by magic bytes; the name stays
 // entry.png per the kit rules). The program copies it to
 // $MAKEFUN_OUTPUT_DIR/entry.png (default /output), which is the single
-// image the grader reads.
+// image the grader reads, then validates the copy: the output must be the
+// same size as the source and must start with the JPEG SOI magic bytes
+// (0xFF 0xD8), or the program fails loudly instead of handing the grader
+// a truncated or non-JPEG file.
 //
 // The image sums up Friday 13 November 2026 in four panels:
 //   1. NVIDIA CEO resigns
@@ -18,10 +21,24 @@
 // Run outside the grader's container with:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const source = new URL('./entry.png', import.meta.url);
 const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const output = join(outputDir, 'entry.png');
 
-copyFileSync(source, join(outputDir, 'entry.png'));
+copyFileSync(source, output);
+
+// Validate the copy: same byte size as the source, and JPEG SOI magic.
+const sourceSize = statSync(source).size;
+const outputSize = statSync(output).size;
+if (outputSize !== sourceSize) {
+  throw new Error(
+    `entry.png copy size mismatch: output ${outputSize} bytes, source ${sourceSize} bytes`,
+  );
+}
+const header = readFileSync(output).subarray(0, 2);
+if (header[0] !== 0xff || header[1] !== 0xd8) {
+  throw new Error('entry.png is not a JPEG (missing 0xFF 0xD8 SOI magic)');
+}
